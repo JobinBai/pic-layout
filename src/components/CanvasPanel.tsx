@@ -36,10 +36,10 @@ export default function CanvasPanel() {
     canvas.clear()
     canvas.backgroundColor = backgroundColor
 
-    const tpl = useTemplateStore.getState().currentTemplate
-    const gap = useTemplateStore.getState().slotGap
-    const radius = useTemplateStore.getState().slotRadius
-    const allImages = useImageStore.getState().images
+    const tpl = currentTemplate
+    const gap = slotGap
+    const radius = slotRadius
+    const allImages = images
 
     const cw = displayWidth
     const ch = displayHeight
@@ -140,12 +140,12 @@ export default function CanvasPanel() {
 
     canvas.setDimensions({ width: displayWidth, height: displayHeight })
     canvas.renderAll()
-  }, [getCanvas, displayWidth, displayHeight, backgroundColor])
+  }, [getCanvas, displayWidth, displayHeight, backgroundColor, currentTemplate, slotGap, slotRadius, images])
 
   // 当模板/图片/画布变化时重新渲染
   useEffect(() => {
     renderCanvas()
-  }, [renderCanvas, currentTemplate, images, canvasWidth, canvasHeight, canvasUnit, slotGap, backgroundColor])
+  }, [renderCanvas, currentTemplate, images, canvasWidth, canvasHeight, canvasUnit, slotGap, slotRadius, backgroundColor])
 
   // 滚轮缩放（缩放 DOM，不修改 Fabric Zoom）
   useEffect(() => {
@@ -175,8 +175,19 @@ export default function CanvasPanel() {
     }
 
     el.addEventListener('wheel', onWheel, { passive: false })
-    return () => el.removeEventListener('wheel', onWheel as any)
+    return () => el.removeEventListener('wheel', onWheel)
   }, [])
+
+  const getObjectName = (obj: unknown): string | undefined => {
+    const nameValue = (obj as { name?: unknown }).name
+    if (typeof nameValue === 'string') return nameValue
+
+    const get = (obj as { get?: (key: string) => unknown }).get
+    if (typeof get !== 'function') return undefined
+
+    const v = get.call(obj, 'name')
+    return typeof v === 'string' ? v : undefined
+  }
 
   // 键盘事件（删除选中图片）
   useEffect(() => {
@@ -188,8 +199,8 @@ export default function CanvasPanel() {
         const activeObjects = canvas.getActiveObjects()
         if (activeObjects.length > 0) {
           activeObjects.forEach(obj => {
-            const name = (obj as any).name || obj.get?.('name')
-            if (name && typeof name === 'string' && name.startsWith('img-')) {
+            const name = getObjectName(obj)
+            if (name && name.startsWith('img-')) {
               const imageId = name.replace('img-', '')
               useImageStore.getState().removeImageFromSlot(imageId)
             }

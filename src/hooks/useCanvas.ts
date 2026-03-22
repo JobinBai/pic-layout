@@ -1,8 +1,8 @@
 /** Fabric.js Canvas 生命周期管理 hook */
 
 import { useEffect, useRef, useCallback } from 'react'
-import { Canvas, Rect, FabricImage, Circle } from 'fabric'
-import { useCanvasStore, useTemplateStore, useImageStore } from '../stores'
+import { Canvas } from 'fabric'
+import { useCanvasStore } from '../stores'
 
 export function useCanvas(canvasElRef: React.RefObject<HTMLCanvasElement | null>) {
   const fabricRef = useRef<Canvas | null>(null)

@@ -3,7 +3,7 @@
 import { useCallback } from 'react'
 import { jsPDF } from 'jspdf'
 import { useCanvasStore, useHistoryStore } from '../stores'
-import type { ExportConfig, ExportFormat } from '../types'
+import type { ExportConfig } from '../types'
 
 interface ExportResult {
   success: boolean
@@ -47,7 +47,7 @@ export function useExport(getCanvas: () => import('fabric').Canvas | null) {
         canvas.renderAll()
 
         if (config.format === 'pdf') {
-          return exportPDF(canvas, pixelSize, config)
+          return exportPDF(canvas, pixelSize)
         } else {
           return exportImage(canvas, config)
         }
@@ -80,8 +80,7 @@ async function exportImage(
 
 async function exportPDF(
   canvas: import('fabric').Canvas,
-  pixelSize: { width: number; height: number },
-  config: ExportConfig
+  pixelSize: { width: number; height: number }
 ): Promise<ExportResult> {
   const dataUrl = canvas.toDataURL({ format: 'png', quality: 1, multiplier: 1 })
   const pdf = new jsPDF({
