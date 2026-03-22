@@ -18,10 +18,13 @@ export default function CanvasPanel() {
   const canvasDpi = useCanvasStore((s) => s.dpi)
   const backgroundColor = useCanvasStore((s) => s.backgroundColor)
   const zoom = useCanvasStore((s) => s.zoom)
+  const exportMode = useCanvasStore((s) => s.exportMode)
 
   const currentTemplate = useTemplateStore((s) => s.currentTemplate)
   const slotGap = useTemplateStore((s) => s.slotGap)
   const slotRadius = useTemplateStore((s) => s.slotRadius)
+  const canvasPadding = useTemplateStore((s) => s.canvasPadding)
+  const slotMargin = useTemplateStore((s) => s.slotMargin)
 
   const images = useImageStore((s) => s.images)
 
@@ -29,14 +32,28 @@ export default function CanvasPanel() {
   const displayWidth = Math.round(canvasWidth * UNIT_CONVERSION[canvasUnit])
   const displayHeight = Math.round(canvasHeight * UNIT_CONVERSION[canvasUnit])
 
-  // 更新容器尺寸到 store
+  // 更新容器尺寸到 store 并自动适应缩放
   useEffect(() => {
+    const updateBounds = () => {
+      const el = containerRef.current
+      if (el && el.clientWidth > 0 && el.clientHeight > 0) {
+        setContainerBounds({
+          width: el.clientWidth,
+          height: el.clientHeight,
+        })
+      }
+    }
+
+    updateBounds()
+
+    // 使用 ResizeObserver 更可靠地检测容器尺寸变化
     const el = containerRef.current
-    if (el && el.clientWidth > 0 && el.clientHeight > 0) {
-      setContainerBounds({
-        width: el.clientWidth,
-        height: el.clientHeight,
+    if (el) {
+      const observer = new ResizeObserver(() => {
+        updateBounds()
       })
+      observer.observe(el)
+      return () => observer.disconnect()
     }
   }, [setContainerBounds])
 
@@ -57,18 +74,25 @@ export default function CanvasPanel() {
     canvas.backgroundColor = backgroundColor
 
     const tpl = currentTemplate
-    const gap = slotGap
+    const gapH = slotMargin.horizontal
+    const gapV = slotMargin.vertical
     const radius = slotRadius
-    const allImages = images
+    const allImages = exportMode === 'blank' ? [] : images
 
-    const cw = displayWidth
-    const ch = displayHeight
+    // 画布可用区域（减去边距）
+    const paddingTop = canvasPadding.top
+    const paddingRight = canvasPadding.right
+    const paddingBottom = canvasPadding.bottom
+    const paddingLeft = canvasPadding.left
+
+    const cw = displayWidth - paddingLeft - paddingRight
+    const ch = displayHeight - paddingTop - paddingBottom
 
     tpl.slots.forEach((slot) => {
-      const sx = slot.x * cw + gap
-      const sy = slot.y * ch + gap
-      const sw = slot.width * cw - gap * 2
-      const sh = slot.height * ch - gap * 2
+      const sx = slot.x * cw + paddingLeft + gapH
+      const sy = slot.y * ch + paddingTop + gapV
+      const sw = slot.width * cw - gapH * 2
+      const sh = slot.height * ch - gapV * 2
 
       const assignedImage = allImages.find((img) => img.slotId === slot.id)
 
@@ -108,10 +132,10 @@ export default function CanvasPanel() {
             let targetSlotId: string | null = null
             for (const slot of tpl.slots) {
               if (slot.id === assignedImage.slotId) continue
-              const tsx = slot.x * cw + gap
-              const tsy = slot.y * ch + gap
-              const tsw = slot.width * cw - gap * 2
-              const tsh = slot.height * ch - gap * 2
+              const tsx = slot.x * cw + paddingLeft + gapH
+              const tsy = slot.y * ch + paddingTop + gapV
+              const tsw = slot.width * cw - gapH * 2
+              const tsh = slot.height * ch - gapV * 2
 
               if (centerX >= tsx && centerX <= tsx + tsw && centerY >= tsy && centerY <= tsy + tsh) {
                 targetSlotId = slot.id
@@ -146,10 +170,13 @@ export default function CanvasPanel() {
           canvas.renderAll()
         })
       } else {
+        // 空白槽位（导出/打印模式或未分配的槽位）
         const slotRect = new Rect({
           left: sx, top: sy, width: sw, height: sh,
-          fill: 'rgba(42, 42, 60, 0.3)',
-          stroke: '#585b70', strokeWidth: 1.5, strokeDashArray: [6, 4],
+          fill: exportMode === 'blank' ? 'white' : 'rgba(42, 42, 60, 0.3)',
+          stroke: exportMode === 'blank' ? '#ccc' : '#585b70',
+          strokeWidth: exportMode === 'blank' ? 0.5 : 1.5,
+          strokeDashArray: exportMode === 'blank' ? undefined : [6, 4],
           rx: radius, ry: radius,
           selectable: false, evented: false,
           name: `slot-${slot.id}`,
@@ -160,12 +187,12 @@ export default function CanvasPanel() {
 
     canvas.setDimensions({ width: displayWidth, height: displayHeight })
     canvas.renderAll()
-  }, [getCanvas, displayWidth, displayHeight, backgroundColor, currentTemplate, slotGap, slotRadius, images])
+  }, [getCanvas, displayWidth, displayHeight, backgroundColor, currentTemplate, slotGap, slotRadius, images, exportMode, canvasPadding, slotMargin])
 
   // 当模板/图片/画布变化时重新渲染
   useEffect(() => {
     renderCanvas()
-  }, [renderCanvas, currentTemplate, images, canvasWidth, canvasHeight, canvasUnit, slotGap, slotRadius, backgroundColor])
+  }, [renderCanvas, currentTemplate, images, canvasWidth, canvasHeight, canvasUnit, slotGap, slotRadius, backgroundColor, exportMode, canvasPadding, slotMargin])
 
   // 滚轮缩放（缩放 DOM，不修改 Fabric Zoom）
   useEffect(() => {
@@ -250,15 +277,17 @@ export default function CanvasPanel() {
 
     // 查找包含该点的槽位
     const tpl = useTemplateStore.getState().currentTemplate
-    const gap = useTemplateStore.getState().slotGap
-    const cw = displayWidth
-    const ch = displayHeight
+    const padding = useTemplateStore.getState().canvasPadding
+    const gapH = useTemplateStore.getState().slotMargin.horizontal
+    const gapV = useTemplateStore.getState().slotMargin.vertical
+    const cw = displayWidth - padding.left - padding.right
+    const ch = displayHeight - padding.top - padding.bottom
 
     for (const slot of tpl.slots) {
-      const sx = slot.x * cw + gap
-      const sy = slot.y * ch + gap
-      const sw = slot.width * cw - gap * 2
-      const sh = slot.height * ch - gap * 2
+      const sx = slot.x * cw + padding.left + gapH
+      const sy = slot.y * ch + padding.top + gapV
+      const sw = slot.width * cw - gapH * 2
+      const sh = slot.height * ch - gapV * 2
 
       if (x >= sx && x <= sx + sw && y >= sy && y <= sy + sh) {
         useImageStore.getState().assignImageToSlot(imageId, slot.id)
@@ -273,17 +302,23 @@ export default function CanvasPanel() {
   }
 
   return (
-    <div ref={containerRef} className="flex-1 flex items-center justify-center bg-surface-deep overflow-auto relative">
+    <div className="flex-1 flex flex-col bg-surface-deep relative">
       <div 
-        className="shadow-2xl" 
-        style={{ transform: `scale(${zoom})`, transformOrigin: 'center center' }}
+        ref={containerRef}
+        className="flex-1 flex items-center justify-center overflow-auto"
         onDrop={handleDrop}
         onDragOver={handleDragOver}
       >
-        <canvas ref={canvasElRef} />
+        <div 
+          className="shadow-2xl" 
+          style={{ transform: `scale(${zoom})`, transformOrigin: 'center center' }}
+        >
+          <canvas ref={canvasElRef} />
+        </div>
       </div>
 
-      <div className="absolute bottom-0 left-0 right-0 h-8 bg-surface-secondary/80 backdrop-blur-sm flex items-center px-4 text-xs text-text-secondary gap-4">
+      {/* 固定在底部的信息栏 */}
+      <div className="shrink-0 h-8 bg-surface-secondary/95 backdrop-blur-sm flex items-center px-4 text-xs text-text-secondary gap-4 border-t border-white/5">
         <span>{canvasWidth} × {canvasHeight} {canvasUnit}</span>
         <span>|</span>
         <span>{displayWidth} × {displayHeight} px</span>

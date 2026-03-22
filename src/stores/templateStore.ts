@@ -4,22 +4,13 @@ import { create } from 'zustand'
 import type { Template } from '../types'
 import { BUILT_IN_TEMPLATES, createGridTemplate } from '../templates'
 
-interface TemplateState {
-  templates: Template[]
-  currentTemplate: Template
-  slotGap: number
-  slotRadius: number
-
-  setTemplate: (t: Template) => void
-  setSlotGap: (g: number) => void
-  setSlotRadius: (r: number) => void
-  addCustomGrid: (rows: number, cols: number) => void
-  deleteTemplate: (id: string) => void
-}
+// 本地存储持久化
+const CUSTOM_TEMPLATES_KEY = 'custom_templates'
+const CURRENT_TEMPLATE_KEY = 'current_template_id'
 
 const loadCustomTemplates = (): Template[] => {
   try {
-    const saved = localStorage.getItem('custom_templates')
+    const saved = localStorage.getItem(CUSTOM_TEMPLATES_KEY)
     return saved ? JSON.parse(saved) : []
   } catch {
     return []
@@ -28,21 +19,74 @@ const loadCustomTemplates = (): Template[] => {
 
 const saveCustomTemplates = (templates: Template[]) => {
   const custom = templates.filter(t => t.category === 'custom')
-  localStorage.setItem('custom_templates', JSON.stringify(custom))
+  localStorage.setItem(CUSTOM_TEMPLATES_KEY, JSON.stringify(custom))
 }
 
 const initialCustomTemplates = loadCustomTemplates()
 const initialTemplates = [...BUILT_IN_TEMPLATES, ...initialCustomTemplates]
 
+// 恢复上次选择的模板
+const loadCurrentTemplate = (templates: Template[]): Template => {
+  try {
+    const savedId = localStorage.getItem(CURRENT_TEMPLATE_KEY)
+    if (savedId) {
+      const found = templates.find(t => t.id === savedId)
+      if (found) return found
+    }
+  } catch {}
+  return templates[0]
+}
+
+const initialCurrentTemplate = loadCurrentTemplate(initialTemplates)
+
+interface TemplateState {
+  templates: Template[]
+  currentTemplate: Template
+  slotGap: number
+  slotRadius: number
+
+  // 边距和间距
+  canvasPadding: { top: number; right: number; bottom: number; left: number }
+  slotMargin: { horizontal: number; vertical: number }
+
+  // 初始值（用于重置）
+  initialTemplateId: string
+
+  setTemplate: (t: Template) => void
+  setSlotGap: (g: number) => void
+  setSlotRadius: (r: number) => void
+  setCanvasPadding: (padding: { top?: number; right?: number; bottom?: number; left?: number }) => void
+  setSlotMargin: (margin: { horizontal?: number; vertical?: number }) => void
+  addCustomGrid: (rows: number, cols: number) => void
+  deleteTemplate: (id: string) => void
+  resetToInitial: () => void
+}
+
 export const useTemplateStore = create<TemplateState>((set, get) => ({
   templates: initialTemplates,
-  currentTemplate: initialTemplates[0],
+  currentTemplate: initialCurrentTemplate,
   slotGap: 4,
   slotRadius: 0,
+  canvasPadding: { top: 8, right: 8, bottom: 8, left: 8 },
+  slotMargin: { horizontal: 4, vertical: 4 },
+  initialTemplateId: initialCurrentTemplate.id,
 
-  setTemplate: (t) => set({ currentTemplate: t }),
-  setSlotGap: (g) => set({ slotGap: Math.max(0, Math.min(20, g)) }),
+  setTemplate: (t) => {
+    localStorage.setItem(CURRENT_TEMPLATE_KEY, t.id)
+    set({ currentTemplate: t })
+  },
+  setSlotGap: (g) => {
+    const gap = Math.max(0, Math.min(20, g))
+    set({ slotGap: gap, slotMargin: { horizontal: gap, vertical: gap } })
+  },
   setSlotRadius: (r) => set({ slotRadius: Math.max(0, Math.min(20, r)) }),
+  setCanvasPadding: (padding) => set((state) => ({
+    canvasPadding: { ...state.canvasPadding, ...padding }
+  })),
+  setSlotMargin: (margin) => set((state) => ({
+    slotGap: margin.horizontal ?? margin.vertical ?? state.slotGap,
+    slotMargin: { ...state.slotMargin, ...margin }
+  })),
   addCustomGrid: (rows, cols) => {
     const custom = createGridTemplate(rows, cols)
     const { templates } = get()
@@ -62,6 +106,29 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
     set({
       templates: newTemplates,
       currentTemplate: currentTemplate.id === id ? newTemplates[0] : currentTemplate
+    })
+  },
+  resetToInitial: () => {
+    const { templates, initialTemplateId } = get()
+    const initialTemplate = templates.find(t => t.id === initialTemplateId) || templates[0]
+    set({
+      currentTemplate: initialTemplate,
+      slotGap: 4,
+      slotRadius: 0,
+      canvasPadding: { top: 8, right: 8, bottom: 8, left: 8 },
+      slotMargin: { horizontal: 4, vertical: 4 },
+    })
+  },
+  resetToDefaults: () => {
+    // 重置到系统默认值：第一个预设模板（单张）
+    const { templates } = get()
+    const defaultTemplate = templates.find(t => t.id === 'single') || templates[0]
+    set({
+      currentTemplate: defaultTemplate,
+      slotGap: 4,
+      slotRadius: 0,
+      canvasPadding: { top: 8, right: 8, bottom: 8, left: 8 },
+      slotMargin: { horizontal: 4, vertical: 4 },
     })
   }
 }))

@@ -2,7 +2,7 @@
 
 import { useCallback } from 'react'
 import { useDropzone } from 'react-dropzone'
-import { Upload, ImagePlus, Trash2, X } from 'lucide-react'
+import { Upload, ImagePlus, Trash2, X, MoveHorizontal, MoveVertical } from 'lucide-react'
 import { useImageStore, useTemplateStore } from '../stores'
 import ImageItem from './ImageItem'
 import type { FillMode } from '../types'
@@ -24,8 +24,10 @@ export default function ImagePanel() {
   const assignImageToSlot = useImageStore((s) => s.assignImageToSlot)
 
   const currentTemplate = useTemplateStore((s) => s.currentTemplate)
-  const slotGap = useTemplateStore((s) => s.slotGap)
-  const setSlotGap = useTemplateStore((s) => s.setSlotGap)
+  const canvasPadding = useTemplateStore((s) => s.canvasPadding)
+  const setCanvasPadding = useTemplateStore((s) => s.setCanvasPadding)
+  const slotMargin = useTemplateStore((s) => s.slotMargin)
+  const setSlotMargin = useTemplateStore((s) => s.setSlotMargin)
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     addImages(acceptedFiles)
@@ -96,13 +98,52 @@ export default function ImagePanel() {
         </div>
       )}
 
+      {/* 画布边距 */}
+      <div className="px-3 mb-2">
+        <div className="flex items-center gap-1 mb-2">
+          <MoveHorizontal className="w-3 h-3 text-text-secondary" />
+          <span className="text-[11px] text-text-secondary">画布边距</span>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-[10px] text-text-secondary">左右</span>
+              <span className="text-[10px] text-text-primary">{canvasPadding.left}px</span>
+            </div>
+            <input type="range" min={0} max={50} value={canvasPadding.left} onChange={(e) => setCanvasPadding({ left: Number(e.target.value), right: Number(e.target.value) })} className="w-full h-1 bg-surface-secondary rounded-full appearance-none cursor-pointer accent-primary" />
+          </div>
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-[10px] text-text-secondary">上下</span>
+              <span className="text-[10px] text-text-primary">{canvasPadding.top}px</span>
+            </div>
+            <input type="range" min={0} max={50} value={canvasPadding.top} onChange={(e) => setCanvasPadding({ top: Number(e.target.value), bottom: Number(e.target.value) })} className="w-full h-1 bg-surface-secondary rounded-full appearance-none cursor-pointer accent-primary" />
+          </div>
+        </div>
+      </div>
+
       {/* 槽位间距 */}
       <div className="px-3 mb-2">
-        <div className="flex items-center justify-between mb-1">
+        <div className="flex items-center gap-1 mb-2">
+          <MoveVertical className="w-3 h-3 text-text-secondary" />
           <span className="text-[11px] text-text-secondary">槽位间距</span>
-          <span className="text-[11px] text-text-primary">{slotGap}px</span>
         </div>
-        <input type="range" min={0} max={20} value={slotGap} onChange={(e) => setSlotGap(Number(e.target.value))} className="w-full h-1 bg-surface-secondary rounded-full appearance-none cursor-pointer accent-primary" />
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-[10px] text-text-secondary">左右</span>
+              <span className="text-[10px] text-text-primary">{slotMargin.horizontal}px</span>
+            </div>
+            <input type="range" min={0} max={30} value={slotMargin.horizontal} onChange={(e) => setSlotMargin({ horizontal: Number(e.target.value) })} className="w-full h-1 bg-surface-secondary rounded-full appearance-none cursor-pointer accent-primary" />
+          </div>
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-[10px] text-text-secondary">上下</span>
+              <span className="text-[10px] text-text-primary">{slotMargin.vertical}px</span>
+            </div>
+            <input type="range" min={0} max={30} value={slotMargin.vertical} onChange={(e) => setSlotMargin({ vertical: Number(e.target.value) })} className="w-full h-1 bg-surface-secondary rounded-full appearance-none cursor-pointer accent-primary" />
+          </div>
+        </div>
       </div>
 
       {/* 图片列表 */}
