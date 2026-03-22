@@ -74,8 +74,7 @@ export default function CanvasPanel() {
     canvas.backgroundColor = backgroundColor
 
     const tpl = currentTemplate
-    const gapH = slotMargin.horizontal
-    const gapV = slotMargin.vertical
+    const gap = slotMargin
     const radius = slotRadius
     const allImages = exportMode === 'blank' ? [] : images
 
@@ -89,10 +88,10 @@ export default function CanvasPanel() {
     const ch = displayHeight - paddingTop - paddingBottom
 
     tpl.slots.forEach((slot) => {
-      const sx = slot.x * cw + paddingLeft + gapH
-      const sy = slot.y * ch + paddingTop + gapV
-      const sw = slot.width * cw - gapH * 2
-      const sh = slot.height * ch - gapV * 2
+      const sx = slot.x * cw + paddingLeft + gap
+      const sy = slot.y * ch + paddingTop + gap
+      const sw = slot.width * cw - gap * 2
+      const sh = slot.height * ch - gap * 2
 
       const assignedImage = allImages.find((img) => img.slotId === slot.id)
 
@@ -132,10 +131,10 @@ export default function CanvasPanel() {
             let targetSlotId: string | null = null
             for (const slot of tpl.slots) {
               if (slot.id === assignedImage.slotId) continue
-              const tsx = slot.x * cw + paddingLeft + gapH
-              const tsy = slot.y * ch + paddingTop + gapV
-              const tsw = slot.width * cw - gapH * 2
-              const tsh = slot.height * ch - gapV * 2
+              const tsx = slot.x * cw + paddingLeft + gap
+              const tsy = slot.y * ch + paddingTop + gap
+              const tsw = slot.width * cw - gap * 2
+              const tsh = slot.height * ch - gap * 2
 
               if (centerX >= tsx && centerX <= tsx + tsw && centerY >= tsy && centerY <= tsy + tsh) {
                 targetSlotId = slot.id
@@ -278,16 +277,15 @@ export default function CanvasPanel() {
     // 查找包含该点的槽位
     const tpl = useTemplateStore.getState().currentTemplate
     const padding = useTemplateStore.getState().canvasPadding
-    const gapH = useTemplateStore.getState().slotMargin.horizontal
-    const gapV = useTemplateStore.getState().slotMargin.vertical
+    const gap = useTemplateStore.getState().slotMargin
     const cw = displayWidth - padding.left - padding.right
     const ch = displayHeight - padding.top - padding.bottom
 
     for (const slot of tpl.slots) {
-      const sx = slot.x * cw + padding.left + gapH
-      const sy = slot.y * ch + padding.top + gapV
-      const sw = slot.width * cw - gapH * 2
-      const sh = slot.height * ch - gapV * 2
+      const sx = slot.x * cw + padding.left + gap
+      const sy = slot.y * ch + padding.top + gap
+      const sw = slot.width * cw - gap * 2
+      const sh = slot.height * ch - gap * 2
 
       if (x >= sx && x <= sx + sw && y >= sy && y <= sy + sh) {
         useImageStore.getState().assignImageToSlot(imageId, slot.id)
@@ -302,7 +300,7 @@ export default function CanvasPanel() {
   }
 
   return (
-    <div className="flex-1 flex flex-col bg-surface-deep relative">
+    <div className="flex-1 flex flex-col bg-surface-deep relative overflow-hidden">
       <div 
         ref={containerRef}
         className="flex-1 flex items-center justify-center overflow-auto"
@@ -310,7 +308,7 @@ export default function CanvasPanel() {
         onDragOver={handleDragOver}
       >
         <div 
-          className="shadow-2xl" 
+          className="shadow-2xl shrink-0"
           style={{ transform: `scale(${zoom})`, transformOrigin: 'center center' }}
         >
           <canvas ref={canvasElRef} />

@@ -47,7 +47,7 @@ interface TemplateState {
 
   // 边距和间距
   canvasPadding: { top: number; right: number; bottom: number; left: number }
-  slotMargin: { horizontal: number; vertical: number }
+  slotMargin: number
 
   // 初始值（用于重置）
   initialTemplateId: string
@@ -56,7 +56,7 @@ interface TemplateState {
   setSlotGap: (g: number) => void
   setSlotRadius: (r: number) => void
   setCanvasPadding: (padding: { top?: number; right?: number; bottom?: number; left?: number }) => void
-  setSlotMargin: (margin: { horizontal?: number; vertical?: number }) => void
+  setSlotMargin: (margin: number) => void
   addCustomGrid: (rows: number, cols: number) => void
   deleteTemplate: (id: string) => void
   resetToInitial: () => void
@@ -68,7 +68,7 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
   slotGap: 4,
   slotRadius: 0,
   canvasPadding: { top: 8, right: 8, bottom: 8, left: 8 },
-  slotMargin: { horizontal: 4, vertical: 4 },
+  slotMargin: 4,
   initialTemplateId: initialCurrentTemplate.id,
 
   setTemplate: (t) => {
@@ -77,16 +77,13 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
   },
   setSlotGap: (g) => {
     const gap = Math.max(0, Math.min(20, g))
-    set({ slotGap: gap, slotMargin: { horizontal: gap, vertical: gap } })
+    set({ slotGap: gap, slotMargin: gap })
   },
   setSlotRadius: (r) => set({ slotRadius: Math.max(0, Math.min(20, r)) }),
   setCanvasPadding: (padding) => set((state) => ({
     canvasPadding: { ...state.canvasPadding, ...padding }
   })),
-  setSlotMargin: (margin) => set((state) => ({
-    slotGap: margin.horizontal ?? margin.vertical ?? state.slotGap,
-    slotMargin: { ...state.slotMargin, ...margin }
-  })),
+  setSlotMargin: (margin) => set({ slotMargin: margin, slotGap: margin }),
   addCustomGrid: (rows, cols) => {
     const custom = createGridTemplate(rows, cols)
     const { templates } = get()
@@ -116,7 +113,7 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
       slotGap: 4,
       slotRadius: 0,
       canvasPadding: { top: 8, right: 8, bottom: 8, left: 8 },
-      slotMargin: { horizontal: 4, vertical: 4 },
+      slotMargin: 4,
     })
   },
   resetToDefaults: () => {
@@ -128,7 +125,7 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
       slotGap: 4,
       slotRadius: 0,
       canvasPadding: { top: 8, right: 8, bottom: 8, left: 8 },
-      slotMargin: { horizontal: 4, vertical: 4 },
+      slotMargin: 4,
     })
   }
 }))

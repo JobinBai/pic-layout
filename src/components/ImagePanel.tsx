@@ -124,26 +124,14 @@ export default function ImagePanel() {
 
       {/* 槽位间距 */}
       <div className="px-3 mb-2">
-        <div className="flex items-center gap-1 mb-2">
-          <MoveVertical className="w-3 h-3 text-text-secondary" />
-          <span className="text-[11px] text-text-secondary">槽位间距</span>
-        </div>
-        <div className="grid grid-cols-2 gap-2">
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-[10px] text-text-secondary">左右</span>
-              <span className="text-[10px] text-text-primary">{slotMargin.horizontal}px</span>
-            </div>
-            <input type="range" min={0} max={30} value={slotMargin.horizontal} onChange={(e) => setSlotMargin({ horizontal: Number(e.target.value) })} className="w-full h-1 bg-surface-secondary rounded-full appearance-none cursor-pointer accent-primary" />
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-1">
+            <MoveVertical className="w-3 h-3 text-text-secondary" />
+            <span className="text-[11px] text-text-secondary">槽位间距</span>
           </div>
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-[10px] text-text-secondary">上下</span>
-              <span className="text-[10px] text-text-primary">{slotMargin.vertical}px</span>
-            </div>
-            <input type="range" min={0} max={30} value={slotMargin.vertical} onChange={(e) => setSlotMargin({ vertical: Number(e.target.value) })} className="w-full h-1 bg-surface-secondary rounded-full appearance-none cursor-pointer accent-primary" />
-          </div>
+          <span className="text-[10px] text-text-primary">{slotMargin}px</span>
         </div>
+        <input type="range" min={0} max={30} value={slotMargin} onChange={(e) => setSlotMargin(Number(e.target.value))} className="w-full h-1 bg-surface-secondary rounded-full appearance-none cursor-pointer accent-primary" />
       </div>
 
       {/* 图片列表 */}
