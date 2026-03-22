@@ -11,6 +11,7 @@ export default function CanvasPanel() {
   const containerRef = useRef<HTMLDivElement>(null)
   const { getCanvas } = useCanvas(canvasElRef)
 
+  const setContainerBounds = useCanvasStore((s) => s.setContainerBounds)
   const canvasWidth = useCanvasStore((s) => s.width)
   const canvasHeight = useCanvasStore((s) => s.height)
   const canvasUnit = useCanvasStore((s) => s.unit)
@@ -27,6 +28,25 @@ export default function CanvasPanel() {
   // 计算画布像素尺寸（显示用）
   const displayWidth = Math.round(canvasWidth * UNIT_CONVERSION[canvasUnit])
   const displayHeight = Math.round(canvasHeight * UNIT_CONVERSION[canvasUnit])
+
+  // 更新容器尺寸到 store
+  useEffect(() => {
+    const el = containerRef.current
+    if (el && el.clientWidth > 0 && el.clientHeight > 0) {
+      setContainerBounds({
+        width: el.clientWidth,
+        height: el.clientHeight,
+      })
+    }
+  }, [setContainerBounds])
+
+  // 监听容器尺寸变化并自动适应缩放
+  const containerBounds = useCanvasStore((s) => s.containerBounds)
+  useEffect(() => {
+    if (containerBounds && containerBounds.width > 0 && containerBounds.height > 0) {
+      useCanvasStore.getState().fitZoom()
+    }
+  }, [containerBounds])
 
   // 渲染模板槽位和图片
   const renderCanvas = useCallback(() => {

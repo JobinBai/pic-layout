@@ -23,11 +23,6 @@ export function useCanvas(canvasElRef: React.RefObject<HTMLCanvasElement | null>
     fabricRef.current = canvas
     useCanvasStore.getState().setCanvas(canvas)
 
-    // 首次自适应缩放
-    setTimeout(() => {
-      useCanvasStore.getState().fitZoom()
-    }, 100)
-
     return () => {
       canvas.dispose()
       fabricRef.current = null
